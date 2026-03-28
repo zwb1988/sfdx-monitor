@@ -15,8 +15,10 @@ export async function pollOnce (targetOrg, state, refs, deps) {
   if (state.requestInFlight) return
   state.requestInFlight = true
   const refreshNowBtn = refs?.refreshNowBtn
+  const batchExportBtn = refs?.batchExportCsvBtn
   const orgSelect = refs?.orgSelect
   if (refreshNowBtn) refreshNowBtn.disabled = true
+  if (batchExportBtn) batchExportBtn.disabled = true
   setStatus('Loading…', 'loading', refs)
   try {
     const { jobs, instanceUrl } = await fetchBatchJobs(targetOrg, refs)
@@ -31,7 +33,13 @@ export async function pollOnce (targetOrg, state, refs, deps) {
     renderJobs([], state, refs)
   } finally {
     state.requestInFlight = false
-    if (refreshNowBtn) refreshNowBtn.disabled = !(orgSelect?.value?.trim())
+    if (refreshNowBtn || batchExportBtn) {
+      const org = orgSelect?.value?.trim()
+      const batchTab = state.activeTab === 'batch-monitor'
+      const on = !!(org && batchTab)
+      if (refreshNowBtn) refreshNowBtn.disabled = !on
+      if (batchExportBtn) batchExportBtn.disabled = !on
+    }
   }
 }
 

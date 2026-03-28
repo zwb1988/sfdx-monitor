@@ -41,3 +41,31 @@ export function compare (a, b, key, getProgressFn) {
   if (typeof va === 'number' && typeof vb === 'number') return va - vb
   return String(va).localeCompare(String(vb))
 }
+
+/** Compare two scheduled cron rows for client-side sort (keys match normalized API fields). */
+export function compareScheduled (a, b, key) {
+  if (key === 'nextFireTime' || key === 'previousFireTime') {
+    const da = a[key] ? new Date(a[key]).getTime() : NaN
+    const db = b[key] ? new Date(b[key]).getTime() : NaN
+    if (!Number.isFinite(da) && !Number.isFinite(db)) return 0
+    if (!Number.isFinite(da)) return 1
+    if (!Number.isFinite(db)) return -1
+    return da - db
+  }
+  if (key === 'timesTriggered') {
+    const na = Number(a.timesTriggered)
+    const nb = Number(b.timesTriggered)
+    const fa = Number.isFinite(na)
+    const fb = Number.isFinite(nb)
+    if (!fa && !fb) return 0
+    if (!fa) return 1
+    if (!fb) return -1
+    return na - nb
+  }
+  const va = a[key]
+  const vb = b[key]
+  if (va == null && vb == null) return 0
+  if (va == null) return 1
+  if (vb == null) return -1
+  return String(va).localeCompare(String(vb), undefined, { sensitivity: 'base' })
+}

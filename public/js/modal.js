@@ -1,6 +1,11 @@
-/** Batch detail modal: open, close, format detail values. */
+/** Batch / schedule detail modal: open, close, format detail values. */
 
-import { BATCH_DETAIL_LABELS, BATCH_DETAIL_ORDER } from './constants.js'
+import {
+  BATCH_DETAIL_LABELS,
+  BATCH_DETAIL_ORDER,
+  SCHEDULE_DETAIL_LABELS,
+  SCHEDULE_DETAIL_ORDER
+} from './constants.js'
 import { formatDate, escapeHtml } from './format.js'
 import { statusClass, getProgress } from './jobUtils.js'
 
@@ -14,11 +19,23 @@ function formatBatchDetailValue (key, value, job, useUtc) {
   return String(value)
 }
 
+function formatScheduleDetailValue (key, value, useUtc) {
+  if (value === undefined || value === null || value === '') return '—'
+  if (key === 'nextFireTime' || key === 'previousFireTime') {
+    return formatDate(value, useUtc)
+  }
+  if (key === 'id' || key === 'cronJobDetailId' || key === 'apexClassId') return String(value)
+  return String(value)
+}
+
 export function openBatchDetailModal (job, refs, state) {
   const overlay = refs?.batchDetailOverlay
   const content = refs?.batchDetailContent
   const showLocalTzCheckbox = refs?.showLocalTzCheckbox
+  const titleEl = refs?.batchDetailTitle
   if (!overlay || !content || !job) return
+  state.currentScheduleDetailJob = null
+  if (titleEl) titleEl.textContent = 'Batch details'
   const progress = getProgress(job)
   const statusCls = statusClass(job.status)
   const useUtc = !showLocalTzCheckbox?.checked
@@ -64,10 +81,52 @@ export function openBatchDetailModal (job, refs, state) {
   if (modalCloseBtn) modalCloseBtn.focus()
 }
 
+export function openScheduleDetailModal (job, refs, state) {
+  const overlay = refs?.batchDetailOverlay
+  const content = refs?.batchDetailContent
+  const scheduleTz = refs?.scheduleShowLocalTzCheckbox
+  const titleEl = refs?.batchDetailTitle
+  if (!overlay || !content || !job) return
+  state.currentBatchDetailJob = null
+  if (titleEl) titleEl.textContent = 'Scheduled job details'
+  const useUtc = !scheduleTz?.checked
+  const seen = new Set()
+  const rows = []
+  for (const key of SCHEDULE_DETAIL_ORDER) {
+    if (!(key in job)) continue
+    seen.add(key)
+    const label = SCHEDULE_DETAIL_LABELS[key] || key
+    const raw = job[key]
+    let value = formatScheduleDetailValue(key, raw, useUtc)
+    if (value === '—' && raw !== undefined && raw !== null && raw !== '') value = String(raw)
+    rows.push({ key, label, value })
+  }
+  for (const key of Object.keys(job)) {
+    if (seen.has(key)) continue
+    const label = SCHEDULE_DETAIL_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())
+    const raw = job[key]
+    let value = formatScheduleDetailValue(key, raw, useUtc)
+    if (value === '—' && raw !== undefined && raw !== null && raw !== '') value = String(raw)
+    rows.push({ key, label, value })
+  }
+  let html = '<ul class="batch-detail-list">'
+  for (const row of rows) {
+    html += '<li><span class="batch-detail-label">' + escapeHtml(row.label) + '</span><span class="batch-detail-value">' + escapeHtml(String(row.value)) + '</span></li>'
+  }
+  html += '</ul>'
+  content.innerHTML = html
+  overlay.classList.add('is-open')
+  overlay.setAttribute('aria-hidden', 'false')
+  state.currentScheduleDetailJob = job
+  const modalCloseBtn = refs?.modalCloseBtn
+  if (modalCloseBtn) modalCloseBtn.focus()
+}
+
 export function closeBatchDetailModal (refs, state) {
   const overlay = refs?.batchDetailOverlay
   if (!overlay) return
   overlay.classList.remove('is-open')
   overlay.setAttribute('aria-hidden', 'true')
   state.currentBatchDetailJob = null
+  state.currentScheduleDetailJob = null
 }

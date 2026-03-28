@@ -59,4 +59,31 @@ router.get('/batch-jobs', async (req, res, next) => {
   }
 })
 
+router.get('/scheduled-jobs', async (req, res, next) => {
+  const targetOrg = req.query.targetOrg
+  if (!targetOrg || typeof targetOrg !== 'string' || !targetOrg.trim()) {
+    return res.status(400).json({ error: 'targetOrg is required' })
+  }
+  if (!sfCliService.validateTargetOrg(targetOrg)) {
+    return res.status(400).json({ error: 'Invalid targetOrg' })
+  }
+  let limit = req.query.limit
+  if (limit !== undefined && limit !== null) {
+    const n = parseInt(String(limit).trim(), 10)
+    if (!Number.isFinite(n) || n < 1 || n > MAX_SOQL_LIMIT) {
+      return res.status(400).json({ error: 'limit must be between 1 and ' + MAX_SOQL_LIMIT })
+    }
+    limit = n
+  } else {
+    limit = DEFAULT_SOQL_LIMIT
+  }
+  try {
+    const scheduledJobs = await sfCliService.getScheduledApexCronTriggers(targetOrg, { limit })
+    res.json({ scheduledJobs })
+  } catch (err) {
+    err.statusCode = 500
+    next(err)
+  }
+})
+
 module.exports = router

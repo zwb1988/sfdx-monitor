@@ -28,6 +28,15 @@ export function escapeHtml (str) {
   return div.innerHTML
 }
 
+/** Escape for use inside double-quoted HTML attributes (e.g. title=""). */
+export function escapeHtmlAttr (str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
 export function getTimezoneOffsetString () {
   const min = -new Date().getTimezoneOffset()
   const h = Math.floor(Math.abs(min) / 60)

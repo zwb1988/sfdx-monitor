@@ -1,12 +1,13 @@
-# Salesforce Batch Monitor
+# Salesforce Monitor
 
-A Node.js web app that monitors Salesforce Batch Apex jobs using the Salesforce CLI (`sf`). It lists your authenticated orgs, lets you pick an environment, and shows a live-updating table of batch job details with progress, status, and filters.
+A Node.js web app that monitors Salesforce Batch Apex and scheduled Apex jobs using the Salesforce CLI (`sf`). It lists your authenticated orgs, lets you pick an environment, and shows live-updating tables for batch job details (progress, status, filters) and scheduled cron triggers.
 
 ## What it does
 
 - **List orgs** — Loads environments from `sf org list` so you can choose which org to monitor.
 - **Query batch jobs** — Uses `sf data query` to fetch AsyncApexJob records (BatchApex) for the selected org.
-- **Live table** — Displays Batch ID, Apex Class name, Job Type, Job Items Processed, Status, Total Job Items, **Progress** (circular % ring), Started, and Completed.
+- **Scheduled Apex** — **Batch schedule** tab lists CronTrigger rows (scheduled jobs) and enriches Apex class names from AsyncApexJob where available.
+- **Live tables** — Batch tab: Batch ID, Apex Class name, Job Type, Job Items Processed, Status, Total Job Items, **Progress** (circular % ring), Started, and Completed.
 - **Filters** — Filter by status (Queued, Preparing, Processing, Completed, Failed, Aborted, Holding), optional Job ID, and search by Apex class name.
 - **Auto-refresh** — Configurable refresh interval (minimum 1 second); shows “Refresh every X second(s)” and last refreshed date/time.
 - **Refresh now** — Button to trigger an immediate refresh without waiting for the next interval.

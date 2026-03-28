@@ -3,7 +3,7 @@
 import { formatDate, escapeHtml } from './format.js'
 import { statusClass, getProgress, compare } from './jobUtils.js'
 
-function sortJobs (jobs, state) {
+export function getSortedBatchJobs (jobs, state) {
   const arr = (jobs || []).slice()
   arr.sort((a, b) => {
     const c = compare(a, b, state.sortKey, getProgress)
@@ -14,7 +14,7 @@ function sortJobs (jobs, state) {
 
 export function renderJobs (jobs, state, refs) {
   state.jobsCache = jobs || []
-  const sorted = sortJobs(state.jobsCache, state)
+  const sorted = getSortedBatchJobs(state.jobsCache, state)
   const tbody = refs?.jobsTbody
   const showLocalTzCheckbox = refs?.showLocalTzCheckbox
   if (!tbody) return

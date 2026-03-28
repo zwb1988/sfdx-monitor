@@ -13,5 +13,5 @@ app.get('/', (req, res) => {
 app.use(errorHandler)
 
 app.listen(PORT, () => {
-  console.log(`Salesforce Batch Monitor listening on http://localhost:${PORT}`)
+  console.log(`Salesforce Monitor listening on http://localhost:${PORT}`)
 })

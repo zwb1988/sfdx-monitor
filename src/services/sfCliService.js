@@ -6,6 +6,10 @@ const { DEFAULT_SOQL_LIMIT, MAX_SOQL_LIMIT } = constants
 const execFileAsync = promisify(execFile)
 
 const BASE_SELECT = 'SELECT Id, ApexClassId, ApexClass.Name, CreatedDate, CreatedById, CompletedDate, JobType, Status, ExtendedStatus, MethodName, JobItemsProcessed, TotalJobItems, NumberOfErrors, LastProcessed, LastProcessedOffset, ParentJobId FROM AsyncApexJob'
+const CRON_SELECT = 'SELECT Id, CronExpression, NextFireTime, PreviousFireTime, State, TimesTriggered, TimeZoneSidKey, CronJobDetailId, CronJobDetail.Name, CronJobDetail.JobType FROM CronTrigger'
+const ASYNC_APEX_BY_CRON_SELECT = 'SELECT CronTriggerId, ApexClassId, ApexClass.Name, CreatedDate FROM AsyncApexJob'
+/** Max CronTrigger Ids per SOQL IN clause (stay under binding limits). */
+const CRON_TRIGGER_IN_CHUNK = 70
 const DEFAULT_STATUSES = ['Processing', 'Preparing', 'Queued', 'Failed']
 
 const TARGET_ORG_REGEX = /^[a-zA-Z0-9_.@-]+$/
@@ -50,6 +54,15 @@ function buildBatchJobsSoql (options) {
   const n = parseInt(limit, 10)
   const clamped = Number.isFinite(n) && n >= 1 ? Math.min(n, MAX_SOQL_LIMIT) : DEFAULT_SOQL_LIMIT
   return BASE_SELECT + ' WHERE ' + where + ' ORDER BY CreatedDate DESC LIMIT ' + clamped
+}
+
+function buildScheduledCronSoql (options) {
+  const where = "CronJobDetail.JobType = '7'"
+  let limit = options.limit
+  if (limit === undefined || limit === null) limit = DEFAULT_SOQL_LIMIT
+  const n = parseInt(limit, 10)
+  const clamped = Number.isFinite(n) && n >= 1 ? Math.min(n, MAX_SOQL_LIMIT) : DEFAULT_SOQL_LIMIT
+  return CRON_SELECT + ' WHERE ' + where + ' ORDER BY NextFireTime ASC NULLS LAST LIMIT ' + clamped
 }
 
 function getChildEnv () {
@@ -140,6 +153,97 @@ function normalizeBatchJob (record) {
   return result
 }
 
+function normalizeCronTrigger (record) {
+  const detail = record.CronJobDetail || {}
+  const base = {
+    id: record.Id || null,
+    name: detail.Name || '—',
+    cronJobDetailId: record.CronJobDetailId || null,
+    jobType: detail.JobType != null ? String(detail.JobType) : '—',
+    cronExpression: record.CronExpression || '—',
+    nextFireTime: record.NextFireTime || null,
+    previousFireTime: record.PreviousFireTime || null,
+    state: record.State || '—',
+    timesTriggered: record.TimesTriggered ?? '—',
+    timeZoneSidKey: record.TimeZoneSidKey || '—',
+    apexClassName: '—',
+    apexClassId: null
+  }
+  const result = { ...base }
+  for (const key of Object.keys(record)) {
+    if (key === 'attributes' || key === 'CronJobDetail') continue
+    const camel = toCamelCase(key)
+    if (!(camel in result) && record[key] !== undefined) result[camel] = record[key]
+  }
+  return result
+}
+
+function parseScheduledCronResult (stdout) {
+  let data
+  try {
+    data = JSON.parse(stdout)
+  } catch (e) {
+    throw new Error('Invalid JSON from sf data query')
+  }
+  const result = data.result || data
+  const records = result.records || []
+  return records.map(normalizeCronTrigger)
+}
+
+function parseQueryRecords (stdout) {
+  let data
+  try {
+    data = JSON.parse(stdout)
+  } catch (e) {
+    throw new Error('Invalid JSON from sf data query')
+  }
+  const result = data.result || data
+  return result.records || []
+}
+
+/**
+ * Latest ScheduledApex AsyncApexJob per CronTriggerId (name + class id), via CronTriggerId filter.
+ */
+async function fetchApexClassByCronTriggerIds (targetOrg, cronTriggerIds) {
+  const map = new Map()
+  const unique = [...new Set((cronTriggerIds || []).filter(Boolean))]
+  if (!unique.length) return map
+
+  for (let i = 0; i < unique.length; i += CRON_TRIGGER_IN_CHUNK) {
+    const chunk = unique.slice(i, i + CRON_TRIGGER_IN_CHUNK)
+    const inList = chunk.map(id => "'" + String(id).replace(/'/g, '\'\'') + "'").join(',')
+    const soql =
+      ASYNC_APEX_BY_CRON_SELECT +
+      " WHERE JobType = 'ScheduledApex' AND CronTriggerId IN (" +
+      inList +
+      ') ORDER BY CreatedDate DESC LIMIT 2000'
+    const args = [
+      'data', 'query',
+      '--query', soql,
+      '--target-org', targetOrg.trim(),
+      '--json'
+    ]
+    const { stdout, stderr } = await runSf(args).catch((err) => {
+      const raw = err.stderr || err.stdout || err.message
+      const msg = sanitizeSfError(String(raw))
+      throw new Error(`sf data query failed: ${msg}`)
+    })
+    const output = stderr && !stdout ? stderr : stdout
+    const records = parseQueryRecords(output)
+    for (const rec of records) {
+      const ctid = rec.CronTriggerId
+      if (!ctid || map.has(ctid)) continue
+      const apex = rec.ApexClass || {}
+      const name = apex.Name ? String(apex.Name) : null
+      map.set(ctid, {
+        apexClassName: name || '—',
+        apexClassId: rec.ApexClassId || null
+      })
+    }
+  }
+  return map
+}
+
 function parseBatchJobsResult (stdout) {
   let data
   try {
@@ -199,9 +303,40 @@ async function getBatchJobs (targetOrg, options = {}) {
   return parseBatchJobsResult(output)
 }
 
+async function getScheduledApexCronTriggers (targetOrg, options = {}) {
+  if (!validateTargetOrg(targetOrg)) {
+    throw new Error('Invalid targetOrg')
+  }
+  const soql = buildScheduledCronSoql(options)
+  const args = [
+    'data', 'query',
+    '--query', soql,
+    '--target-org', targetOrg.trim(),
+    '--json'
+  ]
+  const { stdout, stderr } = await runSf(args).catch((err) => {
+    const raw = err.stderr || err.stdout || err.message
+    const msg = sanitizeSfError(String(raw))
+    throw new Error(`sf data query failed: ${msg}`)
+  })
+  const output = stderr && !stdout ? stderr : stdout
+  const triggers = parseScheduledCronResult(output)
+  const ids = triggers.map((t) => t.id).filter(Boolean)
+  const apexByCron = await fetchApexClassByCronTriggerIds(targetOrg, ids)
+  return triggers.map((t) => {
+    const info = apexByCron.get(t.id)
+    return {
+      ...t,
+      apexClassName: info ? info.apexClassName : '—',
+      apexClassId: info ? info.apexClassId : null
+    }
+  })
+}
+
 module.exports = {
   listOrgs,
   getBatchJobs,
+  getScheduledApexCronTriggers,
   getOrgInstanceUrl,
   validateTargetOrg,
   validateJobId

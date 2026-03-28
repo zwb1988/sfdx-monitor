@@ -1,7 +1,7 @@
 {
   "name": "sfdx-batch-monitor",
   "version": "1.0.0",
-  "description": "Monitor Salesforce batch jobs via sf CLI with a web UI",
+  "description": "Monitor Salesforce batch and scheduled Apex jobs via sf CLI with a web UI",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

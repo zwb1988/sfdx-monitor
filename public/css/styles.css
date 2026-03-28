@@ -70,6 +70,139 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.controls-row--top {
+  margin-bottom: 0.75rem;
+}
+
+.tab-panel .controls-row {
+  margin-bottom: 1rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+
+.tab {
+  padding: 0.6rem 1.25rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--table-row-alt);
+}
+
+.tab:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--surface);
+  border-color: var(--border);
+  border-bottom-color: var(--surface);
+}
+
+.tab-panel {
+  padding-top: 1rem;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.status-message--tabs {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.schedule-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Batch monitor tab + batch schedule tab toolbars (inset + separator above table) */
+.table-toolbar.timezone-option {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedule-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.schedule-table th,
+.schedule-table td {
+  white-space: nowrap;
+  max-width: 14rem;
+  vertical-align: top;
+}
+
+/* Column widths (fixed layout); Name and Apex class name equal width (27% each) */
+.schedule-table th:first-child,
+.schedule-table td:first-child,
+.schedule-table th:nth-child(6),
+.schedule-table td:nth-child(6) {
+  width: 27%;
+  max-width: none;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.schedule-table th:nth-child(2),
+.schedule-table td:nth-child(2) {
+  width: 10%;
+  min-width: 5.5rem;
+  max-width: none;
+}
+
+.schedule-table th:nth-child(4),
+.schedule-table td:nth-child(4),
+.schedule-table th:nth-child(5),
+.schedule-table td:nth-child(5) {
+  width: 10%;
+  min-width: 8.5rem;
+  max-width: 10.5rem;
+}
+
+.schedule-table td:first-child .schedule-name-trigger,
+.schedule-table td:first-child .schedule-name-plain {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.schedule-table th:nth-child(3),
+.schedule-table td:nth-child(3) {
+  width: 16%;
+  white-space: normal;
+  word-break: break-all;
+  max-width: 18rem;
+}
+
 .control-group-right {
   margin-left: auto;
 }
@@ -238,6 +371,70 @@ body {
 .table-header-actions {
   margin-left: auto;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Same footprint for info, export, and refresh in batch / schedule toolbars */
+.table-header-actions .info-icon-btn,
+.table-header-actions .refresh-btn,
+.table-header-actions .export-csv-btn {
+  box-sizing: border-box;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-header-actions .refresh-btn {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.table-header-actions .info-icon-btn {
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.table-header-actions .info-icon-btn:focus {
+  box-shadow: none;
+}
+
+.export-csv-btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 0;
+  cursor: pointer;
+}
+
+.export-csv-btn .export-icon-svg {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.export-csv-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.export-csv-btn:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.export-csv-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .refresh-btn {
@@ -264,6 +461,35 @@ body {
 .refresh-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.schedule-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.info-icon-btn {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.info-icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.info-icon-btn:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .timezone-option-label {
@@ -364,6 +590,25 @@ body {
   outline-offset: 2px;
 }
 
+.schedule-name-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-align: left;
+  cursor: pointer;
+}
+
+.schedule-name-trigger:hover {
+  text-decoration: underline;
+}
+
+.schedule-name-trigger:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Batch detail modal overlay */
 .modal-overlay {
   position: fixed;
@@ -394,6 +639,11 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.modal-dialog--reference {
+  width: min(32rem, 92vw);
+  max-width: min(32rem, 92vw);
 }
 
 .modal-header {
@@ -436,6 +686,43 @@ body {
 .modal-content {
   padding: 1.25rem;
   overflow-y: auto;
+}
+
+.modal-content--reference .cron-state-help-intro {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.modal-content--reference .cron-state-help-intro code {
+  font-size: 0.8125rem;
+}
+
+.cron-state-help-list {
+  margin: 0;
+}
+
+.cron-state-help-list dt {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.cron-state-help-list dt:first-of-type {
+  margin-top: 0;
+}
+
+.cron-state-help-list dt code {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cron-state-help-list dd {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 .batch-detail-list {
