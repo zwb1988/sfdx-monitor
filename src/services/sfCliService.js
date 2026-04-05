@@ -88,31 +88,123 @@ function runSf (args) {
   })
 }
 
-function parseOrgList (stdout) {
-  let data
-  try {
-    data = JSON.parse(stdout)
-  } catch (e) {
-    throw new Error('Invalid JSON from sf org list')
+/** Prefer non-empty trimmed stdout; avoids parsing whitespace-only stdout and ignoring stderr. */
+function sfCliTextOutput (stdout, stderr) {
+  const out = String(stdout ?? '').trim()
+  const err = String(stderr ?? '').trim()
+  return out || err
+}
+
+/**
+ * Slice from s[start] through the matching top-level `}` for that `{`, respecting
+ * JSON string rules (so `{`/`}` inside strings are ignored).
+ */
+function sliceBalancedJsonObject (s, start) {
+  if (s[start] !== '{') return null
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < s.length; i++) {
+    const c = s[i]
+    if (inString) {
+      if (escape) {
+        escape = false
+      } else if (c === '\\') {
+        escape = true
+      } else if (c === '"') {
+        inString = false
+      }
+      continue
+    }
+    if (c === '"') {
+      inString = true
+      continue
+    }
+    if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) {
+        return s.slice(start, i + 1)
+      }
+    }
   }
+  return null
+}
+
+/**
+ * Parse CLI stdout/stderr that should be one JSON object. Strips BOM and ANSI
+ * color codes, then tries the full string. If that fails, tries each `{` in
+ * order — the first `{` is often a false start (e.g. `.../path/{id}/...` in a
+ * URL printed before the real JSON).
+ */
+function parseSfJsonOutput (raw, contextLabel) {
+  let s = raw == null ? '' : String(raw)
+  s = s.replace(/^\uFEFF/, '').replace(/\x1b\[[0-9;]*m/g, '').trim()
+  if (!s) {
+    throw new Error(`Invalid JSON from ${contextLabel}: empty output`)
+  }
+  const tryCandidates = () => {
+    try {
+      return JSON.parse(s)
+    } catch (_) {
+      let idx = 0
+      while (idx < s.length) {
+        const start = s.indexOf('{', idx)
+        if (start < 0) break
+        const slice = sliceBalancedJsonObject(s, start)
+        if (slice) {
+          try {
+            return JSON.parse(slice)
+          } catch (_) {
+            idx = start + 1
+            continue
+          }
+        }
+        idx = start + 1
+      }
+      return null
+    }
+  }
+  const parsed = tryCandidates()
+  if (parsed !== null) {
+    return parsed
+  }
+  let firstErrMsg = 'could not parse JSON'
+  try {
+    JSON.parse(s)
+  } catch (e) {
+    firstErrMsg = e.message
+  }
+  const preview = s.length > 280 ? s.slice(0, 280) + '…' : s
+  throw new Error(`Invalid JSON from ${contextLabel}: ${firstErrMsg}. Output preview: ${preview}`)
+}
+
+const ORG_LIST_RESULT_KEYS = ['nonScratchOrgs', 'scratchOrgs', 'other', 'sandboxes', 'devHubs']
+
+function parseOrgList (stdout) {
+  const data = parseSfJsonOutput(stdout, 'sf org list')
   const result = data.result || data
   const orgs = []
+  const seen = new Set()
   const addOrg = (entry) => {
+    if (!entry || typeof entry !== 'object') return
     const alias = entry.alias || entry.username
     const username = entry.username
-    if (alias || username) {
-      orgs.push({ alias: alias || username, username: username || alias })
-    }
+    if (!alias && !username) return
+    const key = String(username || alias)
+    if (seen.has(key)) return
+    seen.add(key)
+    orgs.push({ alias: alias || username, username: username || alias })
   }
-  if (result.nonScratchOrgs) {
-    for (const entry of Object.values(result.nonScratchOrgs)) {
+  const addGroup = (group) => {
+    if (!group) return
+    const list = Array.isArray(group) ? group : Object.values(group)
+    for (const entry of list) {
       addOrg(entry)
     }
   }
-  if (result.scratchOrgs) {
-    for (const entry of Object.values(result.scratchOrgs)) {
-      addOrg(entry)
-    }
+  for (const key of ORG_LIST_RESULT_KEYS) {
+    addGroup(result[key])
   }
   return { orgs }
 }
@@ -179,24 +271,14 @@ function normalizeCronTrigger (record) {
 }
 
 function parseScheduledCronResult (stdout) {
-  let data
-  try {
-    data = JSON.parse(stdout)
-  } catch (e) {
-    throw new Error('Invalid JSON from sf data query')
-  }
+  const data = parseSfJsonOutput(stdout, 'sf data query')
   const result = data.result || data
   const records = result.records || []
   return records.map(normalizeCronTrigger)
 }
 
 function parseQueryRecords (stdout) {
-  let data
-  try {
-    data = JSON.parse(stdout)
-  } catch (e) {
-    throw new Error('Invalid JSON from sf data query')
-  }
+  const data = parseSfJsonOutput(stdout, 'sf data query')
   const result = data.result || data
   return result.records || []
 }
@@ -228,7 +310,7 @@ async function fetchApexClassByCronTriggerIds (targetOrg, cronTriggerIds) {
       const msg = sanitizeSfError(String(raw))
       throw new Error(`sf data query failed: ${msg}`)
     })
-    const output = stderr && !stdout ? stderr : stdout
+    const output = sfCliTextOutput(stdout, stderr)
     const records = parseQueryRecords(output)
     for (const rec of records) {
       const ctid = rec.CronTriggerId
@@ -245,12 +327,7 @@ async function fetchApexClassByCronTriggerIds (targetOrg, cronTriggerIds) {
 }
 
 function parseBatchJobsResult (stdout) {
-  let data
-  try {
-    data = JSON.parse(stdout)
-  } catch (e) {
-    throw new Error('Invalid JSON from sf data query')
-  }
+  const data = parseSfJsonOutput(stdout, 'sf data query')
   const result = data.result || data
   const records = result.records || []
   return records.map(normalizeBatchJob)
@@ -262,8 +339,7 @@ async function listOrgs () {
     const msg = sanitizeSfError(String(raw))
     throw new Error(`sf org list failed: ${msg}`)
   })
-  const output = stderr && !stdout ? stderr : stdout
-  return parseOrgList(output)
+  return parseOrgList(sfCliTextOutput(stdout, stderr))
 }
 
 async function getOrgInstanceUrl (targetOrg) {
@@ -273,8 +349,7 @@ async function getOrgInstanceUrl (targetOrg) {
   const args = ['org', 'display', '--target-org', targetOrg.trim(), '--json']
   try {
     const { stdout, stderr } = await runSf(args)
-    const output = stderr && !stdout ? stderr : stdout
-    const data = JSON.parse(output)
+    const data = parseSfJsonOutput(sfCliTextOutput(stdout, stderr), 'sf org display')
     const result = data.result || data
     const url = result.instanceUrl || result.instance_url
     return typeof url === 'string' && url.trim() ? url.trim().replace(/\/+$/, '') : null
@@ -299,8 +374,7 @@ async function getBatchJobs (targetOrg, options = {}) {
     const msg = sanitizeSfError(String(raw))
     throw new Error(`sf data query failed: ${msg}`)
   })
-  const output = stderr && !stdout ? stderr : stdout
-  return parseBatchJobsResult(output)
+  return parseBatchJobsResult(sfCliTextOutput(stdout, stderr))
 }
 
 async function getScheduledApexCronTriggers (targetOrg, options = {}) {
@@ -319,8 +393,7 @@ async function getScheduledApexCronTriggers (targetOrg, options = {}) {
     const msg = sanitizeSfError(String(raw))
     throw new Error(`sf data query failed: ${msg}`)
   })
-  const output = stderr && !stdout ? stderr : stdout
-  const triggers = parseScheduledCronResult(output)
+  const triggers = parseScheduledCronResult(sfCliTextOutput(stdout, stderr))
   const ids = triggers.map((t) => t.id).filter(Boolean)
   const apexByCron = await fetchApexClassByCronTriggerIds(targetOrg, ids)
   return triggers.map((t) => {

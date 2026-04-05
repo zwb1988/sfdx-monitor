@@ -24,17 +24,18 @@ All other controls (interval, Job ID, search, status filters, Refresh now) are d
 
 ## Setup
 
-Install dependencies:
+Install dependencies (root `postinstall` also installs `client/`):
 
 ```bash
 npm install
 ```
 
-## Run
+## Run (production)
 
-Start the server:
+Build the React UI into `public/`, then start the server:
 
 ```bash
+npm run build
 npm start
 ```
 
@@ -43,6 +44,16 @@ Then open **http://localhost:3000** in your browser (or the port shown in the co
 ```bash
 PORT=4000 npm start
 ```
+
+## Run (development)
+
+Run the Express API and the Vite dev server together (API on port 3000 by default, UI on **http://localhost:5173** with `/api` proxied to Express):
+
+```bash
+npm run dev
+```
+
+Open **http://localhost:5173** so API calls go through the Vite proxy. Ensure nothing else is using port 3000, or adjust the proxy target in `client/vite.config.ts`.
 
 ## Usage
 
@@ -56,6 +67,8 @@ The table sorts by the column headers (click to toggle ascending/descending). Pr
 
 ## Lint
 
+Runs ESLint on the server code and on the React app under `client/`:
+
 ```bash
 npm run lint
 ```
@@ -68,5 +81,5 @@ npm run lint
 ## Tech stack
 
 - **Backend:** Node.js, Express
-- **Frontend:** Vanilla JS, CSS (themes via CSS custom properties)
+- **Frontend:** React, TypeScript, Vite, Zustand; styles from `public/css` (imported into the client build; themes via CSS custom properties)
 - **Data:** Salesforce CLI (`sf org list`, `sf data query`) with JSON output

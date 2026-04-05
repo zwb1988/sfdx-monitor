@@ -67,18 +67,9 @@ router.get('/scheduled-jobs', async (req, res, next) => {
   if (!sfCliService.validateTargetOrg(targetOrg)) {
     return res.status(400).json({ error: 'Invalid targetOrg' })
   }
-  let limit = req.query.limit
-  if (limit !== undefined && limit !== null) {
-    const n = parseInt(String(limit).trim(), 10)
-    if (!Number.isFinite(n) || n < 1 || n > MAX_SOQL_LIMIT) {
-      return res.status(400).json({ error: 'limit must be between 1 and ' + MAX_SOQL_LIMIT })
-    }
-    limit = n
-  } else {
-    limit = DEFAULT_SOQL_LIMIT
-  }
+  // Always use max SOQL rows for scheduled jobs (independent of batch monitor "Number of results").
   try {
-    const scheduledJobs = await sfCliService.getScheduledApexCronTriggers(targetOrg, { limit })
+    const scheduledJobs = await sfCliService.getScheduledApexCronTriggers(targetOrg, { limit: MAX_SOQL_LIMIT })
     res.json({ scheduledJobs })
   } catch (err) {
     err.statusCode = 500

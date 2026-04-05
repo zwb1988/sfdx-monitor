@@ -4,8 +4,11 @@
   "description": "Monitor Salesforce batch and scheduled Apex jobs via sf CLI with a web UI",
   "main": "server.js",
   "scripts": {
+    "postinstall": "npm install --prefix client",
     "start": "node server.js",
-    "lint": "eslint ."
+    "build": "npm run build --prefix client",
+    "dev": "concurrently -n server,client -c blue,green \"node server.js\" \"npm run dev --prefix client\"",
+    "lint": "eslint . && npm run lint --prefix client"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -14,6 +17,7 @@
     "express": "^4.21.0"
   },
   "devDependencies": {
+    "concurrently": "^9.2.0",
     "eslint": "^8.57.0",
     "eslint-config-standard": "^17.1.0"
   }

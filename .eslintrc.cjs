@@ -9,11 +9,5 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'script'
-  },
-  overrides: [
-    {
-      files: ['public/js/**/*.js'],
-      env: { browser: true }
-    }
-  ]
+  }
 }
