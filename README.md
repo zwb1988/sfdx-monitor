@@ -18,7 +18,7 @@ All other controls (interval, Job ID, search, status filters, Refresh now) are d
 
 ## Prerequisites
 
-- **Node.js** 18 or newer
+- **Node.js** 20 or newer
 - **Salesforce CLI** installed and on your PATH as `sf`  
   - Install: [Salesforce CLI](https://developer.salesforce.com/tools/sfdxcli)
 - At least one org authenticated (e.g. `sf org login web` or `sf login org`)
