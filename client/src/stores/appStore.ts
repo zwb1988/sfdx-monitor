@@ -9,7 +9,7 @@ import {
   THEME_STORAGE_KEY
 } from '../utils/constants'
 import { clampInterval } from '../utils/filters'
-import type { DetailModalState, JobRecord, Org, StatusVariant, TabId } from '../types'
+import type { DetailModalState, JobRecord, Org, OrgLimitRow, StatusVariant, TabId } from '../types'
 
 function readInitialTheme (): 'dark' | 'light' {
   try {
@@ -36,10 +36,12 @@ export interface AppStore {
 
   requestInFlight: boolean
   scheduleRequestInFlight: boolean
+  limitsRequestInFlight: boolean
   lastRefreshedAt: string | null
   lastInstanceUrl: string | null
   jobs: JobRecord[]
   scheduledJobs: JobRecord[]
+  orgLimits: OrgLimitRow[]
 
   sortKey: BatchTableSortKey
   sortDir: 'asc' | 'desc'
@@ -70,10 +72,12 @@ export interface AppStore {
 
   setRequestInFlight: (v: boolean) => void
   setScheduleRequestInFlight: (v: boolean) => void
+  setLimitsRequestInFlight: (v: boolean) => void
   setLastRefreshedAt: (iso: string | null) => void
   setLastInstanceUrl: (url: string | null) => void
   setJobs: (jobs: JobRecord[]) => void
   setScheduledJobs: (jobs: JobRecord[]) => void
+  setOrgLimits: (rows: OrgLimitRow[]) => void
 
   toggleSort: (key: BatchTableSortKey) => void
   toggleScheduleSort: (key: ScheduleTableSortKey) => void
@@ -108,10 +112,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   requestInFlight: false,
   scheduleRequestInFlight: false,
+  limitsRequestInFlight: false,
   lastRefreshedAt: null,
   lastInstanceUrl: null,
   jobs: [],
   scheduledJobs: [],
+  orgLimits: [],
 
   sortKey: 'startedAt',
   sortDir: 'desc',
@@ -141,12 +147,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         selectedOrg: '',
         jobs: [],
         scheduledJobs: [],
+        orgLimits: [],
         lastRefreshedAt: null,
         statusMessage: 'Select an org',
         statusVariant: null
       })
     } else {
-      set({ selectedOrg: trimmed })
+      set({ selectedOrg: trimmed, orgLimits: [] })
     }
   },
 
@@ -171,10 +178,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setRequestInFlight: (requestInFlight) => set({ requestInFlight }),
   setScheduleRequestInFlight: (scheduleRequestInFlight) => set({ scheduleRequestInFlight }),
+  setLimitsRequestInFlight: (limitsRequestInFlight) => set({ limitsRequestInFlight }),
   setLastRefreshedAt: (lastRefreshedAt) => set({ lastRefreshedAt }),
   setLastInstanceUrl: (lastInstanceUrl) => set({ lastInstanceUrl }),
 
   setJobs: (jobs) => set({ jobs }),
+
+  setOrgLimits: (orgLimits) => set({ orgLimits }),
 
   setScheduledJobs: (scheduledJobs) =>
     set((s) => {
@@ -230,6 +240,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       jobs: [],
       scheduledJobs: [],
+      orgLimits: [],
       lastRefreshedAt: null
     })
 }))

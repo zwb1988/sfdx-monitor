@@ -7,7 +7,13 @@ export interface Org {
   username?: string
 }
 
-export type TabId = 'batch-monitor' | 'batch-schedule'
+export type TabId = 'batch-monitor' | 'batch-schedule' | 'org-limits'
+
+export interface OrgLimitRow {
+  name: string
+  max: number
+  remaining: number
+}
 
 export type DetailModalState =
   | { mode: 'batch'; job: JobRecord }

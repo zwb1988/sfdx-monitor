@@ -1,7 +1,7 @@
 /** API client: orgs, batch jobs, scheduled jobs. */
 
 import { buildBatchJobsUrl, type BatchQueryParams } from '../utils/filters'
-import type { JobRecord, Org } from '../types'
+import type { JobRecord, Org, OrgLimitRow } from '../types'
 
 interface OrgListJson {
   error?: string
@@ -17,6 +17,11 @@ interface BatchJobsJson {
 export interface BatchJobsResult {
   jobs: JobRecord[]
   instanceUrl: string | null
+}
+
+interface OrgLimitsJson {
+  error?: string
+  limits?: OrgLimitRow[]
 }
 
 interface ScheduledJobsJson {
@@ -41,6 +46,15 @@ export async function fetchBatchJobs (targetOrg: string, params: BatchQueryParam
   const data = await res.json() as BatchJobsJson
   if (!res.ok) throw new Error(data.error || 'Failed to load batch jobs')
   return { jobs: data.jobs ?? [], instanceUrl: data.instanceUrl ?? null }
+}
+
+export async function fetchOrgLimits (targetOrg: string): Promise<OrgLimitRow[]> {
+  const params = new URLSearchParams()
+  params.set('targetOrg', targetOrg)
+  const res = await fetch('/api/org-limits?' + params.toString())
+  const data = await res.json() as OrgLimitsJson
+  if (!res.ok) throw new Error(data.error || 'Failed to load org limits')
+  return data.limits ?? []
 }
 
 export async function fetchScheduledJobs (targetOrg: string): Promise<ScheduledJobsResult> {

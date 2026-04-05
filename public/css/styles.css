@@ -838,6 +838,65 @@ body {
   text-align: center;
 }
 
+/* Org limits: consumption bars (theme tokens) */
+.limits-table .limits-col-name {
+  word-break: break-word;
+  max-width: 22rem;
+}
+
+.limits-table .limits-col-consumption {
+  min-width: 10rem;
+  vertical-align: middle;
+}
+
+.limit-bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.limit-bar-track {
+  flex: 1;
+  min-width: 6rem;
+  max-width: 14rem;
+  height: 0.5rem;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.limit-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  min-width: 0;
+  transition: width 0.2s ease;
+}
+
+.limit-bar-fill--low {
+  background: var(--success);
+}
+
+.limit-bar-fill--mid {
+  background: var(--warning);
+}
+
+.limit-bar-fill--high {
+  background: var(--error);
+}
+
+.limit-bar-pct {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.limit-bar-na {
+  color: var(--text-muted);
+}
+
 .footer {
   margin-top: 2rem;
   padding: 1rem 1.5rem;

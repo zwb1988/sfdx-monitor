@@ -5,8 +5,10 @@ import { StatusMessage } from './components/ui/StatusMessage'
 import { BatchMonitorPanel } from './features/batch-monitor/BatchMonitorPanel'
 import { DetailModal } from './features/modals/DetailModal'
 import { ScheduleStateHelpModal } from './features/modals/ScheduleStateHelpModal'
+import { OrgLimitsPanel } from './features/org-limits/OrgLimitsPanel'
 import { SchedulePanel } from './features/schedule/SchedulePanel'
 import { useBatchPolling } from './hooks/useBatchPolling'
+import { useOrgLimitsPolling } from './hooks/useOrgLimitsPolling'
 import { useOrgs } from './hooks/useOrgs'
 import { useScheduledJobs } from './hooks/useScheduledJobs'
 import { useAppStore } from './stores/appStore'
@@ -16,6 +18,7 @@ import { clampInterval } from './utils/filters'
 export default function App (): JSX.Element {
   useOrgs()
   useBatchPolling()
+  useOrgLimitsPolling()
   const { refreshScheduledJobs } = useScheduledJobs()
 
   const theme = useAppStore((s) => s.theme)
@@ -111,12 +114,25 @@ export default function App (): JSX.Element {
           >
             Batch schedule
           </button>
+          <button
+            type="button"
+            id="tab-org-limits"
+            className="tab"
+            role="tab"
+            aria-selected={activeTab === 'org-limits'}
+            aria-controls="tab-panel-org-limits"
+            tabIndex={activeTab === 'org-limits' ? 0 : -1}
+            onClick={() => setActiveTab('org-limits')}
+          >
+            Org limits
+          </button>
         </div>
 
         <StatusMessage />
 
         <BatchMonitorPanel />
         <SchedulePanel refreshScheduledJobs={refreshScheduledJobs} />
+        <OrgLimitsPanel />
       </main>
       <Footer />
       <DetailModal />

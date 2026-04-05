@@ -406,10 +406,44 @@ async function getScheduledApexCronTriggers (targetOrg, options = {}) {
   })
 }
 
+function parseOrgLimitsResult (stdout) {
+  const data = parseSfJsonOutput(stdout, 'sf force limits api display')
+  const raw = data.result !== undefined ? data.result : data
+  const list = Array.isArray(raw) ? raw : []
+  const limits = []
+  for (const row of list) {
+    if (!row || typeof row !== 'object') continue
+    const name = row.name != null ? String(row.name).trim() : ''
+    const max = Number(row.max)
+    const remaining = Number(row.remaining)
+    if (!name || !Number.isFinite(max) || !Number.isFinite(remaining)) continue
+    limits.push({ name, max, remaining })
+  }
+  return limits
+}
+
+async function getOrgLimits (targetOrg) {
+  if (!validateTargetOrg(targetOrg)) {
+    throw new Error('Invalid targetOrg')
+  }
+  const args = [
+    'force', 'limits', 'api', 'display',
+    '--target-org', targetOrg.trim(),
+    '--json'
+  ]
+  const { stdout, stderr } = await runSf(args).catch((err) => {
+    const raw = err.stderr || err.stdout || err.message
+    const msg = sanitizeSfError(String(raw))
+    throw new Error(`sf force limits api display failed: ${msg}`)
+  })
+  return parseOrgLimitsResult(sfCliTextOutput(stdout, stderr))
+}
+
 module.exports = {
   listOrgs,
   getBatchJobs,
   getScheduledApexCronTriggers,
+  getOrgLimits,
   getOrgInstanceUrl,
   validateTargetOrg,
   validateJobId
