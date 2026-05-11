@@ -1,7 +1,7 @@
 /** API client: orgs, batch jobs, scheduled jobs. */
 
 import { buildBatchJobsUrl, type BatchQueryParams } from '../utils/filters'
-import type { JobRecord, Org, OrgLimitRow } from '../types'
+import type { BatchAnalysisPayload, JobRecord, Org, OrgLimitRow } from '../types'
 
 interface OrgListJson {
   error?: string
@@ -64,4 +64,26 @@ export async function fetchScheduledJobs (targetOrg: string): Promise<ScheduledJ
   const data = await res.json() as ScheduledJobsJson
   if (!res.ok) throw new Error(data.error || 'Failed to load scheduled jobs')
   return { scheduledJobs: data.scheduledJobs ?? [] }
+}
+
+interface BatchAnalysisJson {
+  error?: string
+}
+
+export async function fetchBatchAnalysis (targetOrg: string): Promise<BatchAnalysisPayload> {
+  const params = new URLSearchParams()
+  params.set('targetOrg', targetOrg)
+  const res = await fetch('/api/batch-analysis?' + params.toString())
+  const data = await res.json() as Partial<BatchAnalysisPayload> & BatchAnalysisJson
+  if (!res.ok) throw new Error(data.error || 'Failed to load batch analysis')
+  if (data.summary == null) {
+    throw new Error('Invalid batch analysis response')
+  }
+  return {
+    summary: data.summary,
+    startTimes: data.startTimes ?? [],
+    jobStarts: Array.isArray(data.jobStarts) ? data.jobStarts : [],
+    durationByClass: data.durationByClass ?? [],
+    failuresByClass: data.failuresByClass ?? []
+  }
 }

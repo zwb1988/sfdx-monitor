@@ -910,3 +910,493 @@ body {
   color: var(--text-muted);
   text-align: center;
 }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.control-label-static {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.modal-dialog--wide {
+  width: min(96vw, 72rem);
+  max-width: min(96vw, 72rem);
+}
+
+.batch-analysis-lede {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.batch-analysis-lede code {
+  font-size: 0.8125rem;
+}
+
+.batch-analysis-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.batch-analysis-metric {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.batch-analysis-metric-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.batch-analysis-metric-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.batch-analysis-metric-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.batch-analysis-section {
+  margin-top: 0;
+}
+
+.batch-analysis-placeholder {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.batch-analysis-placeholder.loading {
+  color: var(--accent);
+}
+
+.batch-analysis-placeholder.error {
+  color: var(--error);
+}
+
+.batch-analysis-body {
+  padding: 0 0 0.5rem;
+}
+
+.batch-analysis-block {
+  padding: 1rem 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.batch-analysis-block:last-child {
+  border-bottom: none;
+}
+
+.batch-analysis-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.batch-analysis-muted {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.analysis-heatmap {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.7rem;
+}
+
+.analysis-heatmap-corner,
+.analysis-heatmap-day {
+  text-align: left;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.2rem 0.35rem;
+}
+
+.analysis-heatmap-hour {
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.15rem 0.1rem;
+  min-width: 1.1rem;
+}
+
+.analysis-heatmap-cell-wrap {
+  padding: 1px;
+  vertical-align: middle;
+  text-align: center;
+  min-width: 0.7rem;
+  min-height: 1.1rem;
+  border-radius: 2px;
+  cursor: crosshair;
+  transition: box-shadow 0.1s ease;
+}
+
+.analysis-heatmap-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  padding: 1rem;
+}
+
+.analysis-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.15rem;
+  min-height: 7rem;
+  padding: 0.25rem 0;
+}
+
+.analysis-bar-chart--hourly {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.analysis-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1 0 1.5rem;
+  min-width: 1.25rem;
+}
+
+.analysis-bar-track-v {
+  width: 100%;
+  min-height: 5.5rem;
+  height: 5.5rem;
+  background: var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.analysis-bar-fill-v {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+  min-height: 0;
+  transition: height 0.15s ease;
+}
+
+.analysis-bar-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.analysis-daily-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.analysis-daily-row {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.analysis-daily-date {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-daily-bar-wrap {
+  height: 0.45rem;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.analysis-daily-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  min-width: 2px;
+  transition: width 0.15s ease;
+}
+
+.analysis-daily-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-metrics-table td:first-child {
+  max-width: 22rem;
+  word-break: break-word;
+}
+
+.analysis-failures-table-wrap {
+  overflow-x: auto;
+}
+
+.analysis-failures-table td.analysis-failures-msg {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 36rem;
+}
+
+.batch-analysis-toolbar-meta {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.batch-analysis-last-refresh {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.batch-analysis-status-msg {
+  font-size: 0.8125rem;
+  color: var(--accent);
+}
+
+.batch-analysis-body--refreshing {
+  opacity: 0.82;
+  transition: opacity 0.15s ease;
+}
+
+.batch-analysis-duration-filter {
+  margin-bottom: 0.75rem;
+}
+
+.analysis-day-picker {
+  margin-bottom: 0.75rem;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+}
+
+.heatmap-legend-low {
+  color: rgb(255, 235, 59);
+}
+
+.heatmap-legend-high {
+  color: rgb(183, 28, 28);
+}
+
+.heatmap-legend-bar {
+  flex: 1;
+  max-width: 12rem;
+  height: 0.45rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgb(255, 243, 110) 0%, rgb(183, 28, 28) 100%);
+}
+
+.analysis-heatmap-day-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 4px;
+}
+
+.analysis-heatmap-day-btn:hover,
+.analysis-heatmap-day-btn:focus {
+  text-decoration: underline;
+  outline: none;
+}
+
+.analysis-heatmap-day-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.analysis-heatmap-day-btn.is-selected {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.analysis-heatmap-cell-wrap.is-hover {
+  box-shadow: 0 0 0 2px var(--accent);
+  z-index: 1;
+  position: relative;
+}
+
+.analysis-chart-tooltip {
+  margin-top: 0.5rem;
+  min-height: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+
+.analysis-line-chart-wrap {
+  width: 100%;
+  max-width: 100%;
+}
+
+.analysis-line-chart-meta {
+  margin: 0 0 0.5rem;
+}
+
+.analysis-line-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 16rem;
+}
+
+.analysis-line-chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  opacity: 0.9;
+}
+
+.analysis-line-chart-line {
+  stroke: var(--accent);
+  fill: none;
+}
+
+.analysis-line-chart-axis-label {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.analysis-line-chart-dot {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.analysis-line-chart-dot.is-active {
+  fill: var(--accent);
+}
+
+.analysis-line-chart-floating-tip {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.analysis-daily-row--interactive {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  font-size: 0.8125rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.3rem 0.4rem;
+}
+
+.analysis-daily-row--interactive:hover {
+  background: var(--table-row-alt);
+}
+
+.analysis-daily-row--interactive.is-selected {
+  border-color: var(--accent);
+  background: var(--table-row-alt);
+}
+
+.batch-analysis-echart {
+  width: 100%;
+  min-height: 200px;
+}
+
+.batch-analysis-chart-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.batch-analysis-top-controls {
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.control-group--batch-analysis-action {
+  position: relative;
+}
+
+.btn-batch-analysis {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-batch-analysis:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-batch-analysis:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.btn-batch-analysis:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.batch-analysis-env-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--warning);
+}
+
+.batch-analysis-loading-banner {
+  margin: 0;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.875rem;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}

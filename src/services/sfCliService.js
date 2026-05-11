@@ -1,3 +1,7 @@
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const { parse: parseCsv } = require('csv-parse/sync')
 const { execFile } = require('child_process')
 const { promisify } = require('util')
 const constants = require('../../config/constants')
@@ -6,6 +10,9 @@ const { DEFAULT_SOQL_LIMIT, MAX_SOQL_LIMIT } = constants
 const execFileAsync = promisify(execFile)
 
 const BASE_SELECT = 'SELECT Id, ApexClassId, ApexClass.Name, CreatedDate, CreatedById, CompletedDate, JobType, Status, ExtendedStatus, MethodName, JobItemsProcessed, TotalJobItems, NumberOfErrors, LastProcessed, LastProcessedOffset, ParentJobId FROM AsyncApexJob'
+/** Full batch history for Bulk API 2.0 export (no row limit; ordering supported for query jobs). */
+const BATCH_HISTORY_BULK_SOQL =
+  BASE_SELECT + " WHERE JobType = 'BatchApex' ORDER BY CreatedDate DESC"
 const CRON_SELECT = 'SELECT Id, CronExpression, NextFireTime, PreviousFireTime, State, TimesTriggered, TimeZoneSidKey, CronJobDetailId, CronJobDetail.Name, CronJobDetail.JobType FROM CronTrigger'
 const ASYNC_APEX_BY_CRON_SELECT = 'SELECT CronTriggerId, ApexClassId, ApexClass.Name, CreatedDate FROM AsyncApexJob'
 /** Max CronTrigger Ids per SOQL IN clause (stay under binding limits). */
@@ -80,10 +87,11 @@ function sanitizeSfError (msg) {
   return msg
 }
 
-function runSf (args) {
+function runSf (args, timeoutMs) {
+  const t = timeoutMs != null ? timeoutMs : constants.SF_CLI_TIMEOUT_MS
   return execFileAsync('sf', args, {
     maxBuffer: constants.SF_CLI_MAX_BUFFER,
-    timeout: constants.SF_CLI_TIMEOUT_MS,
+    timeout: t,
     env: getChildEnv()
   })
 }
@@ -439,12 +447,214 @@ async function getOrgLimits (targetOrg) {
   return parseOrgLimitsResult(sfCliTextOutput(stdout, stderr))
 }
 
+/** Finished executions (batch ran to completion or terminal failure). */
+const BATCH_EXECUTE_TERMINAL_STATUSES = new Set(['Completed', 'Failed', 'Aborted'])
+
+function parseBulkExportCsvFile (filePath) {
+  const buf = fs.readFileSync(filePath)
+  const rows = parseCsv(buf, {
+    columns: true,
+    skip_empty_lines: true,
+    bom: true,
+    relax_column_count: true
+  })
+  return Array.isArray(rows) ? rows : []
+}
+
+/** Bulk CSV uses dotted column names; normalizeBatchJob expects nested ApexClass. */
+function coerceBulkRowToSoqlRecordShape (row) {
+  if (!row || typeof row !== 'object') return row
+  const dotted =
+    row['ApexClass.Name'] ??
+    row['apexClass.name']
+  if (dotted != null && String(dotted).trim() !== '' && !row.ApexClass) {
+    return {
+      ...row,
+      ApexClass: { Name: String(dotted) }
+    }
+  }
+  return row
+}
+
+/**
+ * Downloads all matching AsyncApexJob rows via Bulk API 2.0 (`sf data export bulk`) to a temp CSV,
+ * then parses locally. CSV avoids multi-batch JSON export issues in the CLI; SOQL must comply with
+ * Bulk API 2.0 query limits (see Salesforce Bulk API developer guide).
+ */
+async function fetchBatchApexJobsHistoryViaBulkExport (targetOrg) {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sfdx-batch-analysis-'))
+  const queryPath = path.join(tmpRoot, 'query.soql')
+  const outPath = path.join(tmpRoot, 'export.csv')
+  fs.writeFileSync(queryPath, BATCH_HISTORY_BULK_SOQL, 'utf8')
+  const waitMin = constants.BATCH_ANALYSIS_BULK_WAIT_MINUTES
+  try {
+    const args = [
+      'data', 'export', 'bulk',
+      '--query-file', queryPath,
+      '--output-file', outPath,
+      '--result-format', 'csv',
+      '--target-org', targetOrg.trim(),
+      '--wait', String(waitMin)
+    ]
+    await runSf(args, constants.SF_CLI_BATCH_EXPORT_TIMEOUT_MS).catch((err) => {
+      const raw = err.stderr || err.stdout || err.message
+      const msg = sanitizeSfError(String(raw))
+      throw new Error(`sf data export bulk failed: ${msg}`)
+    })
+    if (!fs.existsSync(outPath)) {
+      throw new Error('Bulk export finished but output file was not found')
+    }
+    let records = parseBulkExportCsvFile(outPath)
+    records = records.map(coerceBulkRowToSoqlRecordShape)
+    const maxRows = constants.BATCH_ANALYSIS_MAX_TOTAL_ROWS
+    if (records.length > maxRows) {
+      records = records.slice(0, maxRows)
+    }
+    return records
+  } finally {
+    try {
+      fs.rmSync(tmpRoot, { recursive: true, force: true })
+    } catch (_) {}
+  }
+}
+
+function jobDurationMs (createdIso, completedIso) {
+  if (!createdIso || !completedIso) return null
+  const a = Date.parse(String(createdIso))
+  const b = Date.parse(String(completedIso))
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+  const d = b - a
+  return d >= 0 ? d : null
+}
+
+function percentileSorted (sortedAsc, p) {
+  if (!sortedAsc.length) return null
+  const n = sortedAsc.length
+  const rank = (p / 100) * (n - 1)
+  const lo = Math.floor(rank)
+  const hi = Math.ceil(rank)
+  if (lo === hi) return sortedAsc[lo]
+  const w = rank - lo
+  return sortedAsc[lo] * (1 - w) + sortedAsc[hi] * w
+}
+
+function buildBatchJobAnalysisFromRecords (records) {
+  let dateMin = null
+  let dateMax = null
+  const startTimes = []
+  const jobStarts = []
+  const durationsAll = []
+  const durationsByClass = new Map()
+  const failuresByClass = new Map()
+
+  for (const rec of records) {
+    const norm = normalizeBatchJob(rec)
+    const className = norm.apexClassName != null ? String(norm.apexClassName) : '—'
+    const started = norm.startedAt || rec.CreatedDate
+    if (started) {
+      const startedStr = String(started)
+      startTimes.push(startedStr)
+      jobStarts.push({ startedAt: startedStr, apexClassName: className })
+      const t = Date.parse(startedStr)
+      if (Number.isFinite(t)) {
+        if (dateMin == null || t < dateMin) dateMin = t
+        if (dateMax == null || t > dateMax) dateMax = t
+      }
+    }
+
+    const status = norm.status != null ? String(norm.status) : ''
+    if (BATCH_EXECUTE_TERMINAL_STATUSES.has(status)) {
+      const dm = jobDurationMs(norm.startedAt || rec.CreatedDate, norm.completedAt || rec.CompletedDate)
+      if (dm != null) {
+        durationsAll.push(dm)
+      }
+    }
+    if (status === 'Completed') {
+      const dm = jobDurationMs(norm.startedAt || rec.CreatedDate, norm.completedAt || rec.CompletedDate)
+      if (dm != null) {
+        if (!durationsByClass.has(className)) durationsByClass.set(className, [])
+        durationsByClass.get(className).push(dm)
+      }
+    }
+
+    if (status === 'Failed') {
+      if (!failuresByClass.has(className)) failuresByClass.set(className, [])
+      failuresByClass.get(className).push(norm)
+    }
+  }
+
+  const totalRetrieved = records.length
+  let executedCount = 0
+  for (const rec of records) {
+    const st = rec.Status != null ? String(rec.Status) : ''
+    if (BATCH_EXECUTE_TERMINAL_STATUSES.has(st)) executedCount++
+  }
+
+  let overallAvgDurationMs = null
+  let maxDurationMs = null
+  if (durationsAll.length) {
+    overallAvgDurationMs = durationsAll.reduce((a, b) => a + b, 0) / durationsAll.length
+    maxDurationMs = Math.max(...durationsAll)
+  }
+
+  const durationByClass = []
+  for (const [apexClassName, arr] of durationsByClass.entries()) {
+    const sorted = [...arr].sort((a, b) => a - b)
+    const sum = sorted.reduce((a, b) => a + b, 0)
+    durationByClass.push({
+      apexClassName,
+      completedCount: sorted.length,
+      avgDurationMs: sum / sorted.length,
+      p50Ms: percentileSorted(sorted, 50),
+      p90Ms: percentileSorted(sorted, 90),
+      p95Ms: percentileSorted(sorted, 95)
+    })
+  }
+  durationByClass.sort((a, b) => b.completedCount - a.completedCount)
+
+  const failuresByClassList = []
+  for (const [apexClassName, jobs] of failuresByClass.entries()) {
+    failuresByClassList.push({
+      apexClassName,
+      count: jobs.length,
+      jobs
+    })
+  }
+  failuresByClassList.sort((a, b) => b.count - a.count)
+
+  const summary = {
+    dateRangeMin: dateMin != null ? new Date(dateMin).toISOString() : null,
+    dateRangeMax: dateMax != null ? new Date(dateMax).toISOString() : null,
+    totalRetrieved,
+    executedCount,
+    overallAvgDurationMs,
+    maxDurationMs
+  }
+
+  return {
+    summary,
+    startTimes,
+    jobStarts,
+    durationByClass,
+    failuresByClass: failuresByClassList
+  }
+}
+
+async function getBatchJobAnalysis (targetOrg) {
+  if (!validateTargetOrg(targetOrg)) {
+    throw new Error('Invalid targetOrg')
+  }
+  const records = await fetchBatchApexJobsHistoryViaBulkExport(targetOrg.trim())
+  return buildBatchJobAnalysisFromRecords(records)
+}
+
 module.exports = {
   listOrgs,
   getBatchJobs,
   getScheduledApexCronTriggers,
   getOrgLimits,
   getOrgInstanceUrl,
+  getBatchJobAnalysis,
   validateTargetOrg,
   validateJobId
 }

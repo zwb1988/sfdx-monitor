@@ -94,4 +94,21 @@ router.get('/org-limits', async (req, res, next) => {
   }
 })
 
+router.get('/batch-analysis', async (req, res, next) => {
+  const targetOrg = req.query.targetOrg
+  if (!targetOrg || typeof targetOrg !== 'string' || !targetOrg.trim()) {
+    return res.status(400).json({ error: 'targetOrg is required' })
+  }
+  if (!sfCliService.validateTargetOrg(targetOrg)) {
+    return res.status(400).json({ error: 'Invalid targetOrg' })
+  }
+  try {
+    const payload = await sfCliService.getBatchJobAnalysis(targetOrg)
+    res.json(payload)
+  } catch (err) {
+    err.statusCode = 500
+    next(err)
+  }
+})
+
 module.exports = router

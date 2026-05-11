@@ -95,6 +95,7 @@ export interface AppStore {
 
   openBatchDetail: (job: JobRecord) => void
   openScheduleDetail: (job: JobRecord) => void
+  openAnalysisFailuresModal: (apexClassName: string, jobs: JobRecord[]) => void
   closeDetailModal: () => void
   setScheduleStateHelpOpen: (v: boolean) => void
 
@@ -233,6 +234,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   openBatchDetail: (job) => set({ detailModal: { mode: 'batch', job } }),
   openScheduleDetail: (job) => set({ detailModal: { mode: 'schedule', job } }),
+  openAnalysisFailuresModal: (apexClassName, jobs) =>
+    set({ detailModal: { mode: 'analysis-failures', apexClassName, jobs } }),
   closeDetailModal: () => set({ detailModal: null }),
   setScheduleStateHelpOpen: (scheduleStateHelpOpen) => set({ scheduleStateHelpOpen }),
 

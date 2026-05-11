@@ -2,6 +2,7 @@ import { useEffect, type JSX } from 'react'
 import { Footer } from './components/layout/Footer'
 import { Header } from './components/layout/Header'
 import { StatusMessage } from './components/ui/StatusMessage'
+import { BatchAnalysisPanel } from './features/batch-analysis/BatchAnalysisPanel'
 import { BatchMonitorPanel } from './features/batch-monitor/BatchMonitorPanel'
 import { DetailModal } from './features/modals/DetailModal'
 import { ScheduleStateHelpModal } from './features/modals/ScheduleStateHelpModal'
@@ -64,29 +65,31 @@ export default function App (): JSX.Element {
               })}
             </select>
           </div>
-          <div className="control-group">
-            <label htmlFor="interval-input">Refresh interval (seconds)</label>
-            <input
-              type="number"
-              id="interval-input"
-              min={1}
-              aria-label="Refresh interval in seconds"
-              disabled={!orgOk}
-              value={intervalSeconds}
-              onChange={(e) => {
-                const raw = e.target.value
-                setIntervalSeconds(clampInterval(raw === '' ? MIN_INTERVAL : raw))
-              }}
-              onInput={(e) => {
-                const el = e.target as HTMLInputElement
-                const v = clampInterval(el.value)
-                if (el.value !== '' && v < MIN_INTERVAL) {
-                  el.value = String(MIN_INTERVAL)
-                  setIntervalSeconds(MIN_INTERVAL)
-                }
-              }}
-            />
-          </div>
+          {activeTab !== 'batch-analysis' && (
+            <div className="control-group">
+              <label htmlFor="interval-input">Refresh interval (seconds)</label>
+              <input
+                type="number"
+                id="interval-input"
+                min={1}
+                aria-label="Refresh interval in seconds"
+                disabled={!orgOk}
+                value={intervalSeconds}
+                onChange={(e) => {
+                  const raw = e.target.value
+                  setIntervalSeconds(clampInterval(raw === '' ? MIN_INTERVAL : raw))
+                }}
+                onInput={(e) => {
+                  const el = e.target as HTMLInputElement
+                  const v = clampInterval(el.value)
+                  if (el.value !== '' && v < MIN_INTERVAL) {
+                    el.value = String(MIN_INTERVAL)
+                    setIntervalSeconds(MIN_INTERVAL)
+                  }
+                }}
+              />
+            </div>
+          )}
         </section>
 
         <div className="tabs" role="tablist" aria-label="Main views">
@@ -116,6 +119,18 @@ export default function App (): JSX.Element {
           </button>
           <button
             type="button"
+            id="tab-batch-analysis"
+            className="tab"
+            role="tab"
+            aria-selected={activeTab === 'batch-analysis'}
+            aria-controls="tab-panel-batch-analysis"
+            tabIndex={activeTab === 'batch-analysis' ? 0 : -1}
+            onClick={() => setActiveTab('batch-analysis')}
+          >
+            Batch analysis
+          </button>
+          <button
+            type="button"
             id="tab-org-limits"
             className="tab"
             role="tab"
@@ -128,10 +143,11 @@ export default function App (): JSX.Element {
           </button>
         </div>
 
-        <StatusMessage />
+        {activeTab !== 'batch-analysis' && <StatusMessage />}
 
         <BatchMonitorPanel />
         <SchedulePanel refreshScheduledJobs={refreshScheduledJobs} />
+        <BatchAnalysisPanel />
         <OrgLimitsPanel />
       </main>
       <Footer />

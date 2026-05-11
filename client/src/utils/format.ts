@@ -30,3 +30,15 @@ export function getTimezoneOffsetString (): string {
   if (m === 0) return 'UTC' + sign + h
   return 'UTC' + sign + h + ':' + String(m).padStart(2, '0')
 }
+
+export function formatDurationMs (ms: number | null | undefined): string {
+  if (ms == null || !Number.isFinite(ms)) return '—'
+  if (ms < 1000) return Math.round(ms) + ' ms'
+  const s = ms / 1000
+  if (s < 60) return (s < 10 ? s.toFixed(1) : String(Math.round(s))) + ' s'
+  const m = Math.floor(s / 60)
+  const rem = Math.round(s - m * 60)
+  if (m < 60) return m + 'm ' + rem + 's'
+  const h = Math.floor(m / 60)
+  return h + 'h ' + (m % 60) + 'm'
+}
