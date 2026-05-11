@@ -2,7 +2,7 @@ import type { JSX } from 'react'
 import { ExportCsvIcon } from '../../components/ui/ExportCsvIcon'
 import { useAppStore } from '../../stores/appStore'
 import { exportScheduledJobsCsv } from '../../utils/csvExport'
-import { filterScheduledJobsHideDeleted } from '../../utils/filters'
+import { filterScheduledJobsBySearch, filterScheduledJobsHideDeleted } from '../../utils/filters'
 import { getTimezoneOffsetString } from '../../utils/format'
 import { ScheduleTable } from './ScheduleTable'
 
@@ -15,6 +15,7 @@ export function SchedulePanel ({
   const activeTab = useAppStore((s) => s.activeTab)
   const scheduleShowLocalTz = useAppStore((s) => s.scheduleShowLocalTz)
   const scheduleHideDeletedJobs = useAppStore((s) => s.scheduleHideDeletedJobs)
+  const scheduleSearchQuery = useAppStore((s) => s.scheduleSearchQuery)
   const scheduleRequestInFlight = useAppStore((s) => s.scheduleRequestInFlight)
   const scheduledJobs = useAppStore((s) => s.scheduledJobs)
   const scheduleSortKey = useAppStore((s) => s.scheduleSortKey)
@@ -31,7 +32,10 @@ export function SchedulePanel ({
   function onExportCsv (): void {
     const org = selectedOrg.trim()
     if (org) {
-      const rows = filterScheduledJobsHideDeleted(scheduledJobs, scheduleHideDeletedJobs)
+      const rows = filterScheduledJobsBySearch(
+        filterScheduledJobsHideDeleted(scheduledJobs, scheduleHideDeletedJobs),
+        scheduleSearchQuery
+      )
       exportScheduledJobsCsv(rows, scheduleSortKey, scheduleSortDir, org)
     }
   }

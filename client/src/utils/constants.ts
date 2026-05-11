@@ -7,7 +7,7 @@ export const MIN_LIMIT = 1
 export const MAX_LIMIT = 2000
 export const STATUS_OPTIONS = ['Queued', 'Preparing', 'Processing', 'Completed', 'Failed', 'Aborted', 'Holding'] as const
 export type BatchJobStatusOption = (typeof STATUS_OPTIONS)[number]
-export const DEFAULT_STATUSES = ['Processing', 'Preparing', 'Queued', 'Failed'] as const
+export const DEFAULT_STATUSES = ['Processing', 'Preparing', 'Queued', 'Failed', 'Holding'] as const
 
 /** Column keys for batch jobs table sorting (single source of truth). */
 export const BATCH_TABLE_SORT_KEYS = [

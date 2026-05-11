@@ -37,6 +37,8 @@ export default function App (): JSX.Element {
   const setActiveTab = useAppStore((s) => s.setActiveTab)
   const intervalSeconds = useAppStore((s) => s.intervalSeconds)
   const setIntervalSeconds = useAppStore((s) => s.setIntervalSeconds)
+  const scheduleSearchQuery = useAppStore((s) => s.scheduleSearchQuery)
+  const setScheduleSearchQuery = useAppStore((s) => s.setScheduleSearchQuery)
 
   const orgOk = !!selectedOrg.trim()
 
@@ -65,7 +67,7 @@ export default function App (): JSX.Element {
               })}
             </select>
           </div>
-          {activeTab !== 'batch-analysis' && (
+          {activeTab !== 'batch-analysis' && activeTab !== 'batch-schedule' && (
             <div className="control-group">
               <label htmlFor="interval-input">Refresh interval (seconds)</label>
               <input
@@ -144,6 +146,26 @@ export default function App (): JSX.Element {
         </div>
 
         {activeTab !== 'batch-analysis' && <StatusMessage />}
+
+        {activeTab === 'batch-schedule' && (
+          <section
+            className="controls controls-row schedule-controls-row schedule-search-under-status"
+            aria-label="Schedule search"
+          >
+            <div className="control-group">
+              <label htmlFor="schedule-search-input">Search by name or Apex class</label>
+              <input
+                type="search"
+                id="schedule-search-input"
+                placeholder="Name or Apex class"
+                aria-label="Search scheduled jobs by name or Apex class"
+                disabled={!orgOk}
+                value={scheduleSearchQuery}
+                onChange={(e) => setScheduleSearchQuery(e.target.value)}
+              />
+            </div>
+          </section>
+        )}
 
         <BatchMonitorPanel />
         <SchedulePanel refreshScheduledJobs={refreshScheduledJobs} />

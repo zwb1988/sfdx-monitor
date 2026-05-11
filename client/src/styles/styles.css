@@ -142,6 +142,12 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* Batch schedule: search row sits under global status message (see App.tsx) */
+.schedule-search-under-status {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
 .schedule-table {
   table-layout: fixed;
   width: 100%;

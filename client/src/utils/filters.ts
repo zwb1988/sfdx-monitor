@@ -16,6 +16,17 @@ export function filterScheduledJobsHideDeleted (
   return jobs.filter((j) => !isScheduledJobDeleted(j.state))
 }
 
+/** Client-side filter: schedule job name or Apex class name (substring, case-insensitive). */
+export function filterScheduledJobsBySearch (jobs: JobRecord[], query: string): JobRecord[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return jobs
+  return jobs.filter((j) => {
+    const name = String(j.name ?? '').toLowerCase()
+    const apex = String(j.apexClassName ?? '').toLowerCase()
+    return name.includes(q) || apex.includes(q)
+  })
+}
+
 export function clampInterval (value: string | number): number {
   const n = typeof value === 'number' ? value : parseInt(String(value), 10)
   if (isNaN(n) || n < MIN_INTERVAL) return MIN_INTERVAL

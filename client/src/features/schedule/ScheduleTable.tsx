@@ -6,7 +6,7 @@ import {
   type ScheduleTableSortKey,
   isScheduleTableSortKey
 } from '../../utils/constants'
-import { filterScheduledJobsHideDeleted } from '../../utils/filters'
+import { filterScheduledJobsBySearch, filterScheduledJobsHideDeleted } from '../../utils/filters'
 import { formatDate } from '../../utils/format'
 import { getSortedScheduledJobs } from '../../utils/tableSort'
 
@@ -25,11 +25,13 @@ export function ScheduleTable (): JSX.Element {
   const scheduleSortDir = useAppStore((s) => s.scheduleSortDir)
   const scheduleShowLocalTz = useAppStore((s) => s.scheduleShowLocalTz)
   const scheduleHideDeletedJobs = useAppStore((s) => s.scheduleHideDeletedJobs)
+  const scheduleSearchQuery = useAppStore((s) => s.scheduleSearchQuery)
   const toggleScheduleSort = useAppStore((s) => s.toggleScheduleSort)
   const openScheduleDetail = useAppStore((s) => s.openScheduleDetail)
 
   const useUtc = !scheduleShowLocalTz
-  const visible = filterScheduledJobsHideDeleted(scheduledJobs, scheduleHideDeletedJobs)
+  const afterDeleted = filterScheduledJobsHideDeleted(scheduledJobs, scheduleHideDeletedJobs)
+  const visible = filterScheduledJobsBySearch(afterDeleted, scheduleSearchQuery)
   const sorted = getSortedScheduledJobs(visible, scheduleSortKey, scheduleSortDir)
 
   function headerClass (key: ScheduleTableSortKey): string {
@@ -63,7 +65,11 @@ export function ScheduleTable (): JSX.Element {
         <tbody id="scheduled-tbody">
           {sorted.length === 0 ? (
             <tr>
-              <td colSpan={6}>No scheduled Apex jobs</td>
+              <td colSpan={6}>
+                {afterDeleted.length === 0
+                  ? 'No scheduled Apex jobs'
+                  : 'No rows match your search'}
+              </td>
             </tr>
           ) : (
             sorted.map((row, idx) => (

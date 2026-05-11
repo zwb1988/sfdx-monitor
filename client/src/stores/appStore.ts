@@ -57,6 +57,7 @@ export interface AppStore {
   showLocalTz: boolean
   scheduleShowLocalTz: boolean
   scheduleHideDeletedJobs: boolean
+  scheduleSearchQuery: string
 
   detailModal: DetailModalState
   scheduleStateHelpOpen: boolean
@@ -92,6 +93,7 @@ export interface AppStore {
   setShowLocalTz: (v: boolean) => void
   setScheduleShowLocalTz: (v: boolean) => void
   setScheduleHideDeletedJobs: (v: boolean) => void
+  setScheduleSearchQuery: (s: string) => void
 
   openBatchDetail: (job: JobRecord) => void
   openScheduleDetail: (job: JobRecord) => void
@@ -134,6 +136,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showLocalTz: false,
   scheduleShowLocalTz: false,
   scheduleHideDeletedJobs: true,
+  scheduleSearchQuery: '',
 
   detailModal: null,
   scheduleStateHelpOpen: false,
@@ -231,6 +234,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setShowLocalTz: (showLocalTz) => set({ showLocalTz }),
   setScheduleShowLocalTz: (scheduleShowLocalTz) => set({ scheduleShowLocalTz }),
   setScheduleHideDeletedJobs: (scheduleHideDeletedJobs) => set({ scheduleHideDeletedJobs }),
+  setScheduleSearchQuery: (scheduleSearchQuery) => set({ scheduleSearchQuery }),
 
   openBatchDetail: (job) => set({ detailModal: { mode: 'batch', job } }),
   openScheduleDetail: (job) => set({ detailModal: { mode: 'schedule', job } }),
